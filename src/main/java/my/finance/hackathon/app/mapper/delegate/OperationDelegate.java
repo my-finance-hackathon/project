@@ -8,6 +8,8 @@ import my.finance.hackathon.app.model.Operation;
 import my.finance.hackathon.app.model.OperationType;
 import my.finance.hackathon.app.model.TransferOperation;
 
+import java.time.LocalDateTime;
+
 public abstract class OperationDelegate implements IOperationMapper {
 
     @Override
@@ -49,7 +51,7 @@ public abstract class OperationDelegate implements IOperationMapper {
                 .id(operation.getId())
                 .accountFrom(ShortAccountDto.builder().id(accountFrom.getId()).name(accountFrom.getName()).build())
                 .accountTo(ShortAccountDto.builder().id(accountTo.getId()).name(accountTo.getName()).build())
-                .dateTime(operation.getCreationDate())
+                .dateTime(prepareDateTimeForResponse(operation.getUpdateDate(), operation.getCreationDate()))
                 .category(operation.getCategory())
                 .type(operation.getType())
                 .build();
@@ -63,7 +65,7 @@ public abstract class OperationDelegate implements IOperationMapper {
                 .id(transferOperation.getId())
                 .accountFrom(ShortAccountDto.builder().id(accountFrom.getId()).name(accountFrom.getName()).build())
                 .accountTo(ShortAccountDto.builder().id(accountTo.getId()).name(accountTo.getName()).build())
-                .dateTime(transferOperation.getDateTime())
+                .dateTime(prepareDateTimeForResponse(transferOperation.getUpdateDate(), transferOperation.getCreationDate()))
                 .type(transferOperation.getType())
                 .build();
     }
@@ -74,7 +76,7 @@ public abstract class OperationDelegate implements IOperationMapper {
         return SimpleIncomeResponse.builder()
                 .id(operation.getId())
                 .accountTo(ShortAccountDto.builder().id(accountTo.getId()).name(accountTo.getName()).build())
-                .dateTime(operation.getCreationDate())
+                .dateTime(prepareDateTimeForResponse(operation.getUpdateDate(), operation.getCreationDate()))
                 .category(operation.getCategory().getName())
                 .build();
     }
@@ -85,7 +87,7 @@ public abstract class OperationDelegate implements IOperationMapper {
         return SimpleOutcomeResponse.builder()
                 .id(operation.getId())
                 .accountFrom(ShortAccountDto.builder().id(accountFrom.getId()).name(accountFrom.getName()).build())
-                .dateTime(operation.getCreationDate())
+                .dateTime(prepareDateTimeForResponse(operation.getUpdateDate(), operation.getCreationDate()))
                 .category(operation.getCategory().getName())
                 .build();
     }
@@ -98,7 +100,11 @@ public abstract class OperationDelegate implements IOperationMapper {
                 .id(transferOperation.getId())
                 .accountFrom(ShortAccountDto.builder().id(accountFrom.getId()).name(accountFrom.getName()).build())
                 .accountFrom(ShortAccountDto.builder().id(accountTo.getId()).name(accountTo.getName()).build())
-                .dateTime(transferOperation.getDateTime())
+                .dateTime(prepareDateTimeForResponse(transferOperation.getUpdateDate(), transferOperation.getCreationDate()))
                 .build();
+    }
+
+    private LocalDateTime prepareDateTimeForResponse(LocalDateTime update, LocalDateTime create) {
+        return update != null && update.isAfter(create)? update : create;
     }
 }
