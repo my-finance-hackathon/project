@@ -14,25 +14,23 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "operation",
         indexes = {@Index(name = "date_index", columnList = "date_time"),
-                @Index(name = "account_index", columnList = "account_id")})
+                @Index(name = "account_from_index", columnList = "account_from_id"),
+                @Index(name = "account_to_index", columnList = "account_to_id")})
 @Builder
 @FieldNameConstants
-public class Operation {
+public class TransferOperation {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne
-    @JoinColumn(name = "account_id", nullable = false)
-    private Account account;
+    @JoinColumn(name = "account_from_id", nullable = false)
+    private Account accountFrom;
 
-    /**
-     * Available null values cause user can have undefined income or outcome operation.
-    */
     @ManyToOne
-    @JoinColumn(name = "category_id")
-    private Category category;
+    @JoinColumn(name = "account_to_id", nullable = false)
+    private Account accountTo;
 
     @Column(nullable = false, columnDefinition = "DECIMAL(10,2)")
     private BigDecimal amount;
@@ -46,7 +44,6 @@ public class Operation {
     private LocalDateTime updateDate;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, columnDefinition = "type character varying CHECK (type IN ('INCOME', 'OUTCOME'))")
+    @Column(nullable = false, columnDefinition = "type character varying CHECK (type IN ('TRANSFER'))")
     private OperationType type;
-
 }
