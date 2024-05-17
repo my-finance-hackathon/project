@@ -1,4 +1,4 @@
 package my.finance.hackathon.app.model;
 
-public class Transaction {
+public enum OperationType {
 }
