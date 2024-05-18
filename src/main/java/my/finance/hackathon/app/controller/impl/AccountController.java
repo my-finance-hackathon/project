@@ -11,9 +11,7 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -24,27 +22,43 @@ import java.util.List;
 public class AccountController {
 
     private final UserService userService;
-
     private final AccountService accountService;
 
     @GetMapping("/")
     @Secured("ROLE_USER")
-    public SimpleUserDto requestTest(JwtAuthenticationToken principal) {
+    public SimpleUserDto accountListHandler(JwtAuthenticationToken principal) {
         var jwtUser = new SimpleUserDto(principal);
         User currentUser = userService.getUserByUserOrCreate(jwtUser);
         List<Account> userAccounts = accountService.getByUserId(currentUser.getId());
-
         jwtUser.setAccounts(userAccounts);
         return jwtUser;
     }
 
+    @GetMapping("/{id}")
+    @Secured("ROLE_USER")
+    public SimpleUserDto accountHandler(JwtAuthenticationToken principal, @PathVariable Long id) {
+        var jwtUser = new SimpleUserDto(principal);
+        User currentUser = userService.getUserBySid(jwtUser.getSid());
+        List<Account> userAccounts = List.of(accountService.getById(id));
+        jwtUser.setAccounts(userAccounts);
+        return jwtUser;
+    }
+
+
+    @PostMapping("/create")
+    @Secured("ROLE_USER")
+    public String createAccountHandler(JwtAuthenticationToken principal) {
+        var jwtUser = new SimpleUserDto(principal);
+        User user = userService.getUserBySid(jwtUser.getSid());
+        accountService.createAccountForUser(user);
+        return "ok";
+    }
 
     @GetMapping("/unsafetest")
     public String requestUnsafeTest() {
         SecurityContext securityContext = SecurityContextHolder.getContext();
         System.out.println(securityContext.getAuthentication().getName());
         System.out.println(securityContext.getAuthentication().getPrincipal());
-
         return "ok";
     }
 

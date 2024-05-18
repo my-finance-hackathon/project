@@ -1,7 +1,9 @@
 package my.finance.hackathon.app.service.impl;
 
 import lombok.RequiredArgsConstructor;
+import my.finance.hackathon.app.exceptions.NotFoundException;
 import my.finance.hackathon.app.model.Account;
+import my.finance.hackathon.app.model.User;
 import my.finance.hackathon.app.repository.AccountRepository;
 import my.finance.hackathon.app.service.AccountService;
 import org.springframework.stereotype.Service;
@@ -22,6 +24,28 @@ public class AccountServiceImpl implements AccountService {
     @Override
     public List<Account> getByUserId(Long userId) {
         return accountRepository.findByUserId(userId);
+
+    }
+
+    @Override
+    public Account createAccountForUser(User user) {
+        Account account = new Account(user);
+        save(account);
+        return account;
+    }
+
+    @Override
+    public Account getById(Long id) {
+        return accountRepository.findById(id).orElseThrow(() -> new NotFoundException("Account not found"));
+    }
+
+    @Override
+    public void plus(Long accountId, Double sum) {
+
+    }
+
+    @Override
+    public void minus(Long accountId, Double sum) {
 
     }
 }

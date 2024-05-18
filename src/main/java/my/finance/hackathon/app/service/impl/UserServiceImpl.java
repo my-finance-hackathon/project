@@ -30,7 +30,9 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public User getUserById(Long id) throws UsernameNotFoundException {
-        return userRepository.findById(id).orElseThrow(() -> new UsernameNotFoundException("User id not found"));
+        User user = userRepository.findById(id).orElseThrow(() -> new UsernameNotFoundException("User id not found"));
+        if (!user.isEnable()) throw new UsernameNotFoundException("User is blocking");
+        return user;
     }
 
     @Override
@@ -56,6 +58,9 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public User getUserBySid(String sid) {
-        return userRepository.findBySid(sid).orElseThrow(() -> new UsernameNotFoundException("User sid not found"));
+        User user = userRepository.findBySid(sid).orElseThrow(() -> new UsernameNotFoundException("User sid not found"));
+        if (!user.isEnable()) throw new UsernameNotFoundException("User is blocking");
+        return user;
     }
+
 }
