@@ -13,7 +13,7 @@ import java.math.BigDecimal;
 @Data
 @Builder
 @FieldNameConstants
-public class UpdateIncomeOperationRequest implements UpsertOperationRequest {
+public class UpdateIncomeOperationRequest implements IUpsertOperationRequest {
 
     private Long accountToId;
 

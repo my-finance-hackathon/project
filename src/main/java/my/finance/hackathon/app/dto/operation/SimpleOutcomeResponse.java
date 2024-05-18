@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 @Data
 @Builder
 @FieldNameConstants
-public class SimpleOutcomeResponse {
+public class SimpleOutcomeResponse implements ISimpleOpResponse {
 
     private Long id;
 

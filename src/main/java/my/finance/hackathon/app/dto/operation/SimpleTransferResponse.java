@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 @Data
 @Builder
 @FieldNameConstants
-public class SimpleTransferResponse {
+public class SimpleTransferResponse implements ISimpleOpResponse {
 
     private Long id;
 

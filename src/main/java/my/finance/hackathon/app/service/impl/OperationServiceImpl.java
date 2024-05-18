@@ -120,7 +120,7 @@ public class OperationServiceImpl implements IOperationService {
      * Base method to delegate the process to another ones
      */
     @Override
-    public OperationResult makeTransferOp(UpsertOperationRequest request) {
+    public OperationResult makeTransferOp(IUpsertOperationRequest request) {
         if (request instanceof CreateOperationIncomeRequest && request.getType().equals(OperationType.INCOME)) {
             return createIncomingOperation((CreateOperationIncomeRequest) request);
         } else if (request instanceof CreateOperationOutcomeRequest && request.getType().equals(OperationType.OUTCOME)) {
@@ -148,7 +148,7 @@ public class OperationServiceImpl implements IOperationService {
      * Base method to delegate the process to another ones
      */
     @Override
-    public OperationResult updateById(Long id, UpsertOperationRequest request) {
+    public OperationResult updateById(Long id, IUpsertOperationRequest request) {
         if (request instanceof UpdateIncomeOperationRequest && request.getType().equals(OperationType.INCOME)) {
             return updateIncomingOperation(id, (UpdateIncomeOperationRequest) request);
         } else if (request instanceof UpdateOutcomeOperationRequest && request.getType().equals(OperationType.OUTCOME)) {

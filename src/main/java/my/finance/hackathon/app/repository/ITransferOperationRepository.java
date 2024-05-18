@@ -1,6 +1,5 @@
 package my.finance.hackathon.app.repository;
 
-import my.finance.hackathon.app.model.Operation;
 import my.finance.hackathon.app.model.OperationType;
 import my.finance.hackathon.app.model.TransferOperation;
 import org.springframework.data.domain.Page;

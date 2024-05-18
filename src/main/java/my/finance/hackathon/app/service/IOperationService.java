@@ -3,7 +3,7 @@ package my.finance.hackathon.app.service;
 import my.finance.hackathon.app.dto.operation.FilterDto;
 import my.finance.hackathon.app.dto.operation.OperationResponseDto;
 import my.finance.hackathon.app.dto.operation.OperationResult;
-import my.finance.hackathon.app.dto.operation.UpsertOperationRequest;
+import my.finance.hackathon.app.dto.operation.IUpsertOperationRequest;
 import my.finance.hackathon.app.model.OperationType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -30,9 +30,9 @@ public interface IOperationService {
 
     Page<OperationResponseDto> findStandardOpWithFilter(Pageable pageable, FilterDto filter);
 
-    OperationResult makeTransferOp(UpsertOperationRequest request);
+    OperationResult makeTransferOp(IUpsertOperationRequest request);
 
-    OperationResult updateById(Long id, UpsertOperationRequest request);
+    OperationResult updateById(Long id, IUpsertOperationRequest request);
 
     OperationResult deleteByIdAndOperationType(Long id, OperationType type);
 }
