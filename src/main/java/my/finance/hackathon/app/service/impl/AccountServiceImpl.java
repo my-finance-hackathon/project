@@ -46,7 +46,6 @@ public class AccountServiceImpl implements AccountService {
         Account account = getById(accountId);
         account.plus(sum);
         save(account);
-
     }
 
     @Override
@@ -57,5 +56,5 @@ public class AccountServiceImpl implements AccountService {
         save(account);
     }
 
-    
+
 }
