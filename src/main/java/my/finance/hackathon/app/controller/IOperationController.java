@@ -1,16 +1,13 @@
-package my.finance.hackathon.app.service;
+package my.finance.hackathon.app.controller;
 
-import my.finance.hackathon.app.dto.operation.FilterDto;
-import my.finance.hackathon.app.dto.operation.OperationResponseDto;
-import my.finance.hackathon.app.dto.operation.OperationResult;
-import my.finance.hackathon.app.dto.operation.IUpsertOperationRequest;
+import my.finance.hackathon.app.dto.operation.*;
 import my.finance.hackathon.app.model.OperationType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 
-public interface IOperationService {
+public interface IOperationController {
 
     List<OperationResponseDto> findAll();
 
@@ -28,11 +25,19 @@ public interface IOperationService {
 
     List<OperationResponseDto> findAllWithFilter(FilterDto filter);
 
-    Page<OperationResponseDto> findAllWithFilter(Pageable pageable, FilterDto filter);
+    Page<OperationResponseDto> findStandardOpWithFilter(Pageable pageable, FilterDto filter);
 
-    OperationResult makeOperation(IUpsertOperationRequest request);
+    OperationResult makeTransferOp(CreateOperationIncomeRequest request);
 
-    OperationResult updateById(Long id, IUpsertOperationRequest request);
+    OperationResult makeTransferOp(CreateOperationOutcomeRequest request);
+
+    OperationResult makeTransferOp(CreateOperationTransferRequest request);
+
+    OperationResult updateById(Long id, UpdateIncomeOperationRequest request);
+
+    OperationResult updateById(Long id, UpdateOutcomeOperationRequest request);
+
+    OperationResult updateById(Long id, UpdateTransferOperationRequest request);
 
     OperationResult deleteByIdAndOperationType(Long id, OperationType type);
 }

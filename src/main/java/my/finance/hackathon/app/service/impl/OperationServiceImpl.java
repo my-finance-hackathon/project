@@ -1,6 +1,7 @@
 package my.finance.hackathon.app.service.impl;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import my.finance.hackathon.app.dto.operation.*;
 import my.finance.hackathon.app.exceptions.NotFoundException;
 import my.finance.hackathon.app.exceptions.OperationException;
@@ -13,10 +14,7 @@ import my.finance.hackathon.app.repository.spec.TransferOperationSpec;
 import my.finance.hackathon.app.service.AccountService;
 import my.finance.hackathon.app.service.ICategoryService;
 import my.finance.hackathon.app.service.IOperationService;
-import my.finance.hackathon.app.util.BeanUtils;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -25,6 +23,7 @@ import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class OperationServiceImpl implements IOperationService {
 
     private final IOperationMapper operationMapper;
@@ -44,15 +43,15 @@ public class OperationServiceImpl implements IOperationService {
 
     @Override
     public List<OperationResponseDto> findAll() {
-        List<Operation> operations = operationRepository.findAll();
-        List<TransferOperation> transfers = transferRepository.findAll();
+        List<Operation> operations = operationRepository.findAll(createDefaultSort());
+        List<TransferOperation> transfers = transferRepository.findAll(createDefaultSort());
         return Stream.concat(operations.stream().map(operationMapper::operationToResponse),
                 transfers.stream().map(operationMapper::transferToResponse)).toList();
     }
 
     @Override
     public Page<OperationResponseDto> findAll(Pageable pageable) {
-
+        pageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), createDefaultSort());
         Page<Operation> operations = operationRepository.findAll(pageable);
         Page<TransferOperation> transfers = transferRepository.findAll(pageable);
         List<OperationResponseDto> response = Stream.concat(
@@ -64,16 +63,17 @@ public class OperationServiceImpl implements IOperationService {
     @Override
     public List<OperationResponseDto> findAllByOperationType(OperationType type) {
         if (type.equals(OperationType.TRANSFER)) {
-            List<TransferOperation> transfers = transferRepository.findAllByType(type);
+            List<TransferOperation> transfers = transferRepository.findAllByType(type, createDefaultSort());
             return transfers.stream().map(operationMapper::transferToResponse).toList();
         } else {
-            List<Operation> transfers = operationRepository.findAllByType(type);
+            List<Operation> transfers = operationRepository.findAllByType(type, createDefaultSort());
             return transfers.stream().map(operationMapper::operationToResponse).toList();
         }
     }
 
     @Override
     public Page<OperationResponseDto> findAllByOperationType(Pageable pageable, OperationType type) {
+        pageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), createDefaultSort());
         if (type.equals(OperationType.TRANSFER)) {
             Page<TransferOperation> transfers = transferRepository.findAllByType(type, pageable);
             List<OperationResponseDto> response = transfers.getContent().stream().map(operationMapper::transferToResponse).toList();
@@ -88,12 +88,13 @@ public class OperationServiceImpl implements IOperationService {
     @Override
     public List<OperationResponseDto> findStandardOpByCategory(Long categoryId) {
         Category category = categoryService.findEntityById(categoryId);
-        List<Operation> operations = operationRepository.findAllByCategory(category);
+        List<Operation> operations = operationRepository.findAllByCategory(category, createDefaultSort());
         return operations.stream().map(operationMapper::operationToResponse).toList();
     }
 
     @Override
     public Page<OperationResponseDto> findStandardOpByCategory(Pageable pageable, Long categoryId) {
+        pageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), createDefaultSort());
         Category category = categoryService.findEntityById(categoryId);
         Page<Operation> operations = operationRepository.findAllByCategory(category, pageable);
         List<OperationResponseDto> response = operations.getContent().stream().map(operationMapper::operationToResponse).toList();
@@ -102,15 +103,16 @@ public class OperationServiceImpl implements IOperationService {
 
     @Override
     public List<OperationResponseDto> findAllWithFilter(FilterDto filter) {
-        List<Operation> operations = operationRepository.findAll(OperationSpec.withFilter(filter));
-        List<TransferOperation> transfers = transferRepository.findAll(TransferOperationSpec.withFilter(filter));
+        List<Operation> operations = operationRepository.findAll(OperationSpec.withFilter(filter), createDefaultSort());
+        List<TransferOperation> transfers = transferRepository.findAll(TransferOperationSpec.withFilter(filter), createDefaultSort());
         return Stream.concat(
                 operations.stream().map(operationMapper::operationToResponse),
                 transfers.stream().map(operationMapper::transferToResponse)).toList();
     }
 
     @Override
-    public Page<OperationResponseDto> findStandardOpWithFilter(Pageable pageable, FilterDto filter) {
+    public Page<OperationResponseDto> findAllWithFilter(Pageable pageable, FilterDto filter) {
+        pageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), createDefaultSort());
         Page<Operation> operations = operationRepository.findAll(OperationSpec.withFilter(filter), pageable);
         Page<TransferOperation> transfers = transferRepository.findAll(TransferOperationSpec.withFilter(filter), pageable);
         List<OperationResponseDto> response = Stream.concat(
@@ -123,7 +125,8 @@ public class OperationServiceImpl implements IOperationService {
      * Base method to delegate the process to another ones
      */
     @Override
-    public OperationResult makeTransferOp(IUpsertOperationRequest request) {
+    public OperationResult makeOperation(IUpsertOperationRequest request) {
+        //ToDo: добавить логику проверки, соответствует ли операция выбранной категории (ее допустимым параметрам)
         if (request instanceof CreateOperationIncomeRequest && request.getType().equals(OperationType.INCOME)) {
             return createIncomingOperation((CreateOperationIncomeRequest) request);
         } else if (request instanceof CreateOperationOutcomeRequest && request.getType().equals(OperationType.OUTCOME)) {
@@ -223,9 +226,30 @@ public class OperationServiceImpl implements IOperationService {
     @Override
     public OperationResult deleteByIdAndOperationType(Long id, OperationType type) {
         if (type.equals(OperationType.TRANSFER)) {
-            return null;
-        } else if (type.equals(OperationType.INCOME) || type.equals(OperationType.OUTCOME)){
-            return null;
+            TransferOperation operation = findTransferOpByIdWithExceptionHandler(id);
+            try {
+                accountService.minus(operation.getAccountTo().getId(), operation.getAmount().doubleValue());
+                accountService.plus(operation.getAccountFrom().getId(), operation.getAmount().doubleValue());
+                transferRepository.deleteById(id);
+                return OperationResult.builder().result(true).message(String.format("%s operation №%d was deleted", type.name(), operation.getId())).build();
+            } catch (OperationException exception) {
+                log.error(exception.getMessage());
+                return OperationResult.builder().result(false).message(String.format("%s operation №%d can not be deleted", type.name(), id)).build();
+            }
+        } else if (type.equals(OperationType.INCOME) || type.equals(OperationType.OUTCOME)) {
+            Operation operation = findStdOpByIdWithExceptionHandler(id);
+            try {
+                if (type.equals(OperationType.INCOME)) {
+                    accountService.minus(operation.getAccount().getId(), operation.getAmount().doubleValue());
+                } else {
+                    accountService.plus(operation.getAccount().getId(), operation.getAmount().doubleValue());
+                }
+                transferRepository.deleteById(id);
+                return OperationResult.builder().result(true).message(String.format("%s operation №%d was deleted", type.name(), operation.getId())).build();
+            } catch (OperationException exception) {
+                log.error(exception.getMessage());
+                return OperationResult.builder().result(false).message(String.format("%s operation №%d can not be deleted",type.name(), id)).build();
+            }
         } else {
             throw new OperationException("Incorrect input date");
         }
@@ -239,5 +263,9 @@ public class OperationServiceImpl implements IOperationService {
     private TransferOperation findTransferOpByIdWithExceptionHandler(Long id) {
         return transferRepository.findById(id).orElseThrow(
                 () -> new NotFoundException(String.format("Operation with ID %d not found", id)));
+    }
+
+    private Sort createDefaultSort() {
+        return Sort.by("creationDate").descending();
     }
 }
