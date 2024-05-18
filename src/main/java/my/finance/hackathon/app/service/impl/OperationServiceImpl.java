@@ -217,7 +217,6 @@ public class OperationServiceImpl implements IOperationService {
     }
 
     private OperationResult updateTransferOperation(Long id, UpdateTransferOperationRequest request) {
-        //
         return null;
     }
 
