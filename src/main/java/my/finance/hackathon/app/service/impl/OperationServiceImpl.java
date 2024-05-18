@@ -209,73 +209,16 @@ public class OperationServiceImpl implements IOperationService {
     }
 
     private OperationResult updateIncomeOperation(Long id, UpdateIncomeOperationRequest request) {
-        Account newAccountTo = request.getAccountToId() != null ? accountService.getById(request.getAccountToId()) : null;
-        request.setAccountTo(newAccountTo);
-        Operation existedOperation = findStdOpByIdWithExceptionHandler(id);
-        try {
-            if (request.getAmount() != null) {
-                accountService.minus(existedOperation.getAccount().getId(), request.getAmount().doubleValue());
-                if (newAccountTo != null) {
-                    accountService.plus(newAccountTo.getId(), request.getAmount().doubleValue());
-                } else {
-                    accountService.plus(existedOperation.getAccount().getId(), request.getAmount().doubleValue());
-                }
-            }
-            BeanUtils.copyNonNullProperties(operationMapper.incomeRequestToOperation(request), existedOperation);
-            existedOperation.setUpdateDate(LocalDateTime.now());
-            Long operationId = operationRepository.save(existedOperation).getId();
-            return OperationResult.builder().result(true).message(String.format("Transfer operation created, №%d", operationId)).build();
-        } catch (OperationException exception) {
-            //ToDo: сделать логирование
-            return OperationResult.builder().result(false).message("Operation declined").build();
-        }
+        return null;
     }
 
     private OperationResult updateOutcomeOperation(Long id, UpdateOutcomeOperationRequest request) {
-        Account newAccountFrom = request.getAccountFromId() != null ? accountService.getById(request.getAccountFromId()) : null;
-        request.setAccountFrom(newAccountFrom);
-        Operation existedOperation = findStdOpByIdWithExceptionHandler(id);
-        try {
-            if (request.getAmount() != null) {
-                if (newAccountFrom != null) {
-                    accountService.minus(newAccountFrom.getId(), request.getAmount().doubleValue());
-                    try {
-                        accountService.minus(existedOperation.getAccount().getId(), request.getAmount().doubleValue());
-                    } catch (OperationException exception) {
-                        accountService.plus(newAccountFrom.getId(), request.getAmount().doubleValue());
-                        return OperationResult.builder().result(false).message("Operation declined").build();
-                    }
-                } else {
-                    accountService.minus(existedOperation.getAccount().getId(), request.getAmount().doubleValue());
-                }
-                accountService.plus(existedOperation.getAccount().getId(), request.getAmount().doubleValue());
-            }
-            BeanUtils.copyNonNullProperties(operationMapper.outcomeRequestToOperation(request), existedOperation);
-            existedOperation.setUpdateDate(LocalDateTime.now());
-            Long operationId = operationRepository.save(existedOperation).getId();
-            return OperationResult.builder().result(true).message(String.format("Transfer operation created, №%d", operationId)).build();
-        } catch (OperationException exception) {
-            //ToDo: сделать логирование
-            return OperationResult.builder().result(false).message("Operation declined").build();
-        }
+        return null;
     }
 
     private OperationResult updateTransferOperation(Long id, UpdateTransferOperationRequest request) {
-        Account newAccountTo = request.getAccountToId() != null ? accountService.getById(request.getAccountToId()) : null;
-        Account newAccountFrom = request.getAccountFromId() != null ? accountService.getById(request.getAccountFromId()) : null;
-        request.setAccountTo(newAccountTo);
-        request.setAccountFrom(newAccountFrom);
-        TransferOperation existedOperation = findTransferOpByIdWithExceptionHandler(id);
-        try {
-            if (newAccountTo != null) {
-                accountService.minus(existedOperation.getAccountTo().getId(), );
-            }
-            return OperationResult.builder().result(true).message(String.format("Transfer operation created, №%d", operationId)).build();
-        } catch (OperationException exception) {
-            //ToDo: сделать логирование
-            return OperationResult.builder().result(false).message("Operation declined").build();
-        }
-
+        //
+        return null;
     }
 
     @Override
