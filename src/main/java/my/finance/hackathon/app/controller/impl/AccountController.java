@@ -54,13 +54,5 @@ public class AccountController {
         return "ok";
     }
 
-    @GetMapping("/unsafetest")
-    public String requestUnsafeTest() {
-        SecurityContext securityContext = SecurityContextHolder.getContext();
-        System.out.println(securityContext.getAuthentication().getName());
-        System.out.println(securityContext.getAuthentication().getPrincipal());
-        return "ok";
-    }
-
 
 }
