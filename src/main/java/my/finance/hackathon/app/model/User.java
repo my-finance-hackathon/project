@@ -24,13 +24,26 @@ public class User {
     private String sid;
     @OneToMany(mappedBy = "user")
     private List<Account> account;
-
     private LocalDateTime timeStamp;
+    private boolean enable;
 
     public User(SimpleUserDto simpleUserDto) {
         username = simpleUserDto.getUserName();
         email = simpleUserDto.getEmail();
         sid = simpleUserDto.getSid();
     }
+
+    public boolean isActive() {
+        return enable;
+    }
+
+    public void enable() {
+        enable = true;
+    }
+
+    public void disable() {
+        enable = false;
+    }
+
 
 }

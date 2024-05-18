@@ -13,5 +13,13 @@ public interface UserService {
 
     User getUserById(Long id) throws  UsernameNotFoundException;
 
-    User createUser();
+    User createUser(SimpleUserDto simpleUserDto);
+
+    void enableUser(String sid);
+
+    void disableUser(String sid);
+
+    User getUserBySid(String sid);
+
+
 }
