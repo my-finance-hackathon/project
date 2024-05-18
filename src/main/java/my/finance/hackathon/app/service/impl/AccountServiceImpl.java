@@ -7,6 +7,7 @@ import my.finance.hackathon.app.model.User;
 import my.finance.hackathon.app.repository.AccountRepository;
 import my.finance.hackathon.app.service.AccountService;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -40,12 +41,21 @@ public class AccountServiceImpl implements AccountService {
     }
 
     @Override
+    @Transactional
     public void plus(Long accountId, Double sum) {
+        Account account = getById(accountId);
+        account.plus(sum);
+        save(account);
 
     }
 
     @Override
+    @Transactional
     public void minus(Long accountId, Double sum) {
-
+        Account account = getById(accountId);
+        account.minus(sum);
+        save(account);
     }
+
+    
 }
