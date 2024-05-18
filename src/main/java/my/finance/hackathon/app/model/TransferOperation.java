@@ -46,4 +46,6 @@ public class TransferOperation {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, columnDefinition = "type character varying CHECK (type IN ('TRANSFER'))")
     private OperationType type;
+
+    private boolean success;
 }

@@ -49,4 +49,6 @@ public class Operation {
     @Column(nullable = false, columnDefinition = "type character varying CHECK (type IN ('INCOME', 'OUTCOME'))")
     private OperationType type;
 
+    private boolean success;
+
 }

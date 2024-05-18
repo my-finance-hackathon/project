@@ -2,23 +2,24 @@ package my.finance.hackathon.app.service.impl;
 
 import lombok.RequiredArgsConstructor;
 import my.finance.hackathon.app.dto.operation.*;
+import my.finance.hackathon.app.exceptions.NotFoundException;
 import my.finance.hackathon.app.exceptions.OperationException;
 import my.finance.hackathon.app.mapper.IOperationMapper;
-import my.finance.hackathon.app.model.Category;
-import my.finance.hackathon.app.model.Operation;
-import my.finance.hackathon.app.model.OperationType;
-import my.finance.hackathon.app.model.TransferOperation;
+import my.finance.hackathon.app.model.*;
 import my.finance.hackathon.app.repository.IOperationRepository;
 import my.finance.hackathon.app.repository.ITransferOperationRepository;
 import my.finance.hackathon.app.repository.spec.OperationSpec;
 import my.finance.hackathon.app.repository.spec.TransferOperationSpec;
+import my.finance.hackathon.app.service.AccountService;
 import my.finance.hackathon.app.service.ICategoryService;
 import my.finance.hackathon.app.service.IOperationService;
+import my.finance.hackathon.app.util.BeanUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -33,6 +34,8 @@ public class OperationServiceImpl implements IOperationService {
     private final IOperationRepository operationRepository;
 
     private final ICategoryService categoryService;
+
+    private final AccountService accountService;
 
     @Override
     public OperationResponseDto findByIdAndOperationType(Long id, OperationType type) {
@@ -133,15 +136,60 @@ public class OperationServiceImpl implements IOperationService {
     }
 
     private OperationResult createIncomingOperation(CreateOperationIncomeRequest request) {
-        return null;
+        Account accountTo = accountService.getById(request.getAccountToId());
+        Category category = categoryService.findEntityById(request.getCategoryId());
+        request.setAccountTo(accountTo);
+        request.setCategory(category);
+        try {
+            accountService.plus(request.getAccountToId(), request.getAmount().doubleValue());
+            Operation operation = operationMapper.incomeRequestToOperation(request);
+            operation.setType(OperationType.INCOME);
+            operation.setCreationDate(LocalDateTime.now());
+            Long operationId = operationRepository.save(operation).getId();
+            return OperationResult.builder().result(true).message(String.format("Operation created, №%d", operationId)).build();
+        } catch (OperationException exception) {
+            //ToDo: сделать логирование
+            return OperationResult.builder().result(false).message("Operation declined").build();
+        }
     }
 
     private OperationResult createOutComingOperation(CreateOperationOutcomeRequest request) {
-        return null;
+        Account accountFrom = accountService.getById(request.getAccountFromId());
+        Category category = categoryService.findEntityById(request.getCategoryId());
+        request.setAccountFrom(accountFrom);
+        request.setCategory(category);
+        Operation operation = operationMapper.outcomeRequestToOperation(request);
+        operation.setType(OperationType.OUTCOME);
+        operation.setCreationDate(LocalDateTime.now());
+        try {
+            accountService.minus(request.getAccountFromId(), request.getAmount().doubleValue());
+            operation.setSuccess(true);
+            Long operationId = operationRepository.save(operation).getId();
+            return OperationResult.builder().result(true).message(String.format("Operation created, №%d", operationId)).build();
+        } catch (OperationException exception) {
+            operation.setSuccess(true);
+            Long operationId = operationRepository.save(operation).getId();
+            return OperationResult.builder().result(false).message(String.format("Operation declined, №%d", operationId)).build();
+        }
     }
 
     private OperationResult createTransferOperation(CreateOperationTransferRequest request) {
-        return null;
+        Account accountTo = accountService.getById(request.getAccountToId());
+        Account accountFrom = accountService.getById(request.getAccountFromId());
+        request.setAccountTo(accountTo);
+        request.setAccountFrom(accountFrom);
+        try {
+            accountService.minus(request.getAccountFromId(), request.getAmount().doubleValue());
+            accountService.plus(request.getAccountToId(), request.getAmount().doubleValue());
+            TransferOperation operation = operationMapper.transferRequestToTransferOperation(request);
+            operation.setType(OperationType.TRANSFER);
+            operation.setCreationDate(LocalDateTime.now());
+            Long operationId = transferRepository.save(operation).getId();
+            return OperationResult.builder().result(true).message(String.format("Transfer operation created, №%d", operationId)).build();
+        } catch (OperationException exception) {
+            //ToDo: сделать логирование
+            return OperationResult.builder().result(false).message("Operation declined").build();
+        }
     }
 
     /**
@@ -150,9 +198,9 @@ public class OperationServiceImpl implements IOperationService {
     @Override
     public OperationResult updateById(Long id, IUpsertOperationRequest request) {
         if (request instanceof UpdateIncomeOperationRequest && request.getType().equals(OperationType.INCOME)) {
-            return updateIncomingOperation(id, (UpdateIncomeOperationRequest) request);
+            return updateIncomeOperation(id, (UpdateIncomeOperationRequest) request);
         } else if (request instanceof UpdateOutcomeOperationRequest && request.getType().equals(OperationType.OUTCOME)) {
-            return updateOutComingOperation(id, (UpdateOutcomeOperationRequest) request);
+            return updateOutcomeOperation(id, (UpdateOutcomeOperationRequest) request);
         } else if (request instanceof UpdateTransferOperationRequest && request.getType().equals(OperationType.TRANSFER)) {
             return updateTransferOperation(id, (UpdateTransferOperationRequest) request);
         } else {
@@ -160,16 +208,74 @@ public class OperationServiceImpl implements IOperationService {
         }
     }
 
-    private OperationResult updateIncomingOperation(Long id, UpdateIncomeOperationRequest request) {
-        return null;
+    private OperationResult updateIncomeOperation(Long id, UpdateIncomeOperationRequest request) {
+        Account newAccountTo = request.getAccountToId() != null ? accountService.getById(request.getAccountToId()) : null;
+        request.setAccountTo(newAccountTo);
+        Operation existedOperation = findStdOpByIdWithExceptionHandler(id);
+        try {
+            if (request.getAmount() != null) {
+                accountService.minus(existedOperation.getAccount().getId(), request.getAmount().doubleValue());
+                if (newAccountTo != null) {
+                    accountService.plus(newAccountTo.getId(), request.getAmount().doubleValue());
+                } else {
+                    accountService.plus(existedOperation.getAccount().getId(), request.getAmount().doubleValue());
+                }
+            }
+            BeanUtils.copyNonNullProperties(operationMapper.incomeRequestToOperation(request), existedOperation);
+            existedOperation.setUpdateDate(LocalDateTime.now());
+            Long operationId = operationRepository.save(existedOperation).getId();
+            return OperationResult.builder().result(true).message(String.format("Transfer operation created, №%d", operationId)).build();
+        } catch (OperationException exception) {
+            //ToDo: сделать логирование
+            return OperationResult.builder().result(false).message("Operation declined").build();
+        }
     }
 
-    private OperationResult updateOutComingOperation(Long id, UpdateOutcomeOperationRequest request) {
-        return null;
+    private OperationResult updateOutcomeOperation(Long id, UpdateOutcomeOperationRequest request) {
+        Account newAccountFrom = request.getAccountFromId() != null ? accountService.getById(request.getAccountFromId()) : null;
+        request.setAccountFrom(newAccountFrom);
+        Operation existedOperation = findStdOpByIdWithExceptionHandler(id);
+        try {
+            if (request.getAmount() != null) {
+                if (newAccountFrom != null) {
+                    accountService.minus(newAccountFrom.getId(), request.getAmount().doubleValue());
+                    try {
+                        accountService.minus(existedOperation.getAccount().getId(), request.getAmount().doubleValue());
+                    } catch (OperationException exception) {
+                        accountService.plus(newAccountFrom.getId(), request.getAmount().doubleValue());
+                        return OperationResult.builder().result(false).message("Operation declined").build();
+                    }
+                } else {
+                    accountService.minus(existedOperation.getAccount().getId(), request.getAmount().doubleValue());
+                }
+                accountService.plus(existedOperation.getAccount().getId(), request.getAmount().doubleValue());
+            }
+            BeanUtils.copyNonNullProperties(operationMapper.outcomeRequestToOperation(request), existedOperation);
+            existedOperation.setUpdateDate(LocalDateTime.now());
+            Long operationId = operationRepository.save(existedOperation).getId();
+            return OperationResult.builder().result(true).message(String.format("Transfer operation created, №%d", operationId)).build();
+        } catch (OperationException exception) {
+            //ToDo: сделать логирование
+            return OperationResult.builder().result(false).message("Operation declined").build();
+        }
     }
 
     private OperationResult updateTransferOperation(Long id, UpdateTransferOperationRequest request) {
-        return null;
+        Account newAccountTo = request.getAccountToId() != null ? accountService.getById(request.getAccountToId()) : null;
+        Account newAccountFrom = request.getAccountFromId() != null ? accountService.getById(request.getAccountFromId()) : null;
+        request.setAccountTo(newAccountTo);
+        request.setAccountFrom(newAccountFrom);
+        TransferOperation existedOperation = findTransferOpByIdWithExceptionHandler(id);
+        try {
+            if (newAccountTo != null) {
+                accountService.minus(existedOperation.getAccountTo().getId(), );
+            }
+            return OperationResult.builder().result(true).message(String.format("Transfer operation created, №%d", operationId)).build();
+        } catch (OperationException exception) {
+            //ToDo: сделать логирование
+            return OperationResult.builder().result(false).message("Operation declined").build();
+        }
+
     }
 
     @Override
@@ -181,5 +287,15 @@ public class OperationServiceImpl implements IOperationService {
         } else {
             throw new OperationException("Incorrect input date");
         }
+    }
+
+    private Operation findStdOpByIdWithExceptionHandler(Long id) {
+        return operationRepository.findById(id).orElseThrow(
+                () -> new NotFoundException(String.format("Operation with ID %d not found", id)));
+    }
+
+    private TransferOperation findTransferOpByIdWithExceptionHandler(Long id) {
+        return transferRepository.findById(id).orElseThrow(
+                () -> new NotFoundException(String.format("Operation with ID %d not found", id)));
     }
 }

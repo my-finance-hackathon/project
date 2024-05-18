@@ -18,6 +18,12 @@ public interface IOperationMapper {
 
     TransferOperation transferRequestToTransferOperation(CreateOperationTransferRequest transfer);
 
+    Operation incomeRequestToOperation(UpdateIncomeOperationRequest income);
+
+    Operation outcomeRequestToOperation(UpdateOutcomeOperationRequest outcome);
+
+    TransferOperation transferRequestToTransferOperation(UpdateTransferOperationRequest transfer);
+
     OperationResponseDto operationToResponse(Operation operation);
 
     OperationResponseDto transferToResponse(TransferOperation transferOperation);

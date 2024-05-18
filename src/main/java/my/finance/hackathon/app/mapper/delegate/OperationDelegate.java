@@ -49,8 +49,8 @@ public abstract class OperationDelegate implements IOperationMapper {
         Account accountTo = type.equals(OperationType.INCOME) ? operation.getAccount() : null;
         return OperationResponseDto.builder()
                 .id(operation.getId())
-                .accountFrom(ShortAccountDto.builder().id(accountFrom.getId()).name(accountFrom.getName()).build())
-                .accountTo(ShortAccountDto.builder().id(accountTo.getId()).name(accountTo.getName()).build())
+                .accountFrom(accountFrom != null ? ShortAccountDto.builder().id(accountFrom.getId()).name(accountFrom.getName()).build() : null)
+                .accountTo(accountTo != null ? ShortAccountDto.builder().id(accountTo.getId()).name(accountTo.getName()).build() : null)
                 .dateTime(prepareDateTimeForResponse(operation.getUpdateDate(), operation.getCreationDate()))
                 .category(operation.getCategory())
                 .type(operation.getType())
@@ -102,6 +102,21 @@ public abstract class OperationDelegate implements IOperationMapper {
                 .accountFrom(ShortAccountDto.builder().id(accountTo.getId()).name(accountTo.getName()).build())
                 .dateTime(prepareDateTimeForResponse(transferOperation.getUpdateDate(), transferOperation.getCreationDate()))
                 .build();
+    }
+
+    @Override
+    public Operation incomeRequestToOperation(UpdateIncomeOperationRequest income) {
+        return null;
+    }
+
+    @Override
+    public Operation outcomeRequestToOperation(UpdateOutcomeOperationRequest outcome) {
+        return null;
+    }
+
+    @Override
+    public TransferOperation transferRequestToTransferOperation(UpdateTransferOperationRequest transfer) {
+        return null;
     }
 
     private LocalDateTime prepareDateTimeForResponse(LocalDateTime update, LocalDateTime create) {
