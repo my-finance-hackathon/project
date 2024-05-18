@@ -1,12 +1,6 @@
 server:
   port: 8050
 
-logging:
-  level:
-    my:
-      finance:
-        hackathon:
-          app ${LOGGER_LEVEL:DEBUG}
 
 spring:
   profiles:
@@ -21,13 +15,29 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: create-update
+      ddl-auto: create
 
   datasource:
-    url: ${DB_URL:jdbc:postgresql://localhost:5432/finance_db}
+    url: ${DB_URL:jdbc:postgresql://psql:5432/finance_db}
     username: ${DB_USERNAME:postgres}
     password: ${DB_PASS:postgres}
     hikari:
       schema: finance_schema
       connection-init-sql: CREATE SCHEMA IF NOT EXISTS finance_schema
       connection-timeout: 10000
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://192.168.1.10:8880/realms/myFinance
+      client:
+        provider:
+          keycloak:
+            issuer-uri: http://192.168.1.10:8880/realms/myFinance
+            userNameAttribute: preferred_username
+        registration:
+          keycloak:
+            clientId: myFinanceClient
+            authorization-grant-type: authorization_code
+            scope: openid
